@@ -43,3 +43,35 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Generated plugin files
+.flutter-plugins
+
+# VS Code
+.vscode/
+
+# Firebase
+firebase-debug.log
+
+# Crash logs
+crashlytics-build.properties
+
+# Fastlane
+**/fastlane/report.xml
+**/fastlane/Preview.html
+**/fastlane/screenshots
+**/fastlane/test_output
+
+# CocoaPods
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/ephemeral/
+
+# macOS generated
+macos/Flutter/ephemeral/
+
+# Linux generated
+linux/flutter/ephemeral/
+
+# Windows generated
+windows/flutter/ephemeral/
