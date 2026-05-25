@@ -201,7 +201,6 @@ class ExcelService {
     int bottomRowIndex,
   ) {
     int? alias;
-    int? marker;
     int? q1;
     int? q2;
     int? q3;
@@ -243,7 +242,6 @@ class ExcelService {
       final value = '$topValue $bottomValue'.trim();
 
       if (topValue == 'alias' || bottomValue == 'alias') alias = col;
-      if (topValue == 'marker' || bottomValue == 'marker') marker = col;
 
       if (value.contains('question 1') || value == 'q1') q1 = col;
       if (value.contains('question 2') || value == 'q2') q2 = col;
@@ -270,7 +268,6 @@ class ExcelService {
 
     return _ColumnIndex(
       alias: alias,
-      marker: marker,
       q1: q1,
       q2: q2,
       q3: q3,
@@ -282,7 +279,6 @@ class ExcelService {
 
   _ColumnIndex? _mapHeaderRow(Sheet table, int rowIndex) {
     int? alias;
-    int? marker;
     int? q1;
     int? q2;
     int? q3;
@@ -310,7 +306,6 @@ class ExcelService {
       if (value.isEmpty) continue;
 
       if (value == 'alias') alias = col;
-      if (value == 'marker') marker = col;
       if (value == 'question 1' || value == 'q1') q1 = col;
       if (value == 'question 2' || value == 'q2') q2 = col;
       if (value == 'question 3' || value == 'q3') q3 = col;
@@ -330,7 +325,6 @@ class ExcelService {
 
     return _ColumnIndex(
       alias: alias,
-      marker: marker,
       q1: q1,
       q2: q2,
       q3: q3,
@@ -419,7 +413,6 @@ class ExcelService {
 
 class _ColumnIndex {
   final int alias;
-  final int? marker;
   final int q1;
   final int q2;
   final int q3;
@@ -429,7 +422,6 @@ class _ColumnIndex {
 
   _ColumnIndex({
     required this.alias,
-    required this.marker,
     required this.q1,
     required this.q2,
     required this.q3,

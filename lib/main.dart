@@ -1,12 +1,15 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:file_picker/file_picker.dart';
 import 'services/file_service.dart';
 import 'services/ai_service.dart';
 import 'services/excel_service.dart';
 import 'services/batch_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: '.env');
   runApp(const MyApp());
 }
 
@@ -34,7 +37,7 @@ class ScoringPage extends StatefulWidget {
 }
 
 class _ScoringPageState extends State<ScoringPage> {
-  final TextEditingController _apiKeyController = TextEditingController();
+  String get _groqApiKey => dotenv.env['GROQ_API_KEY'] ?? '';
   final TextEditingController _studentsController = TextEditingController();
   final TextEditingController _criteriaController = TextEditingController();
   final TextEditingController _exportPathController = TextEditingController();
@@ -141,8 +144,8 @@ class _ScoringPageState extends State<ScoringPage> {
   }
 
   Future<void> _evaluateWithAI() async {
-    if (_apiKeyController.text.isEmpty) {
-      _showSnackBar('Please enter your Groq API key');
+    if (_groqApiKey.trim().isEmpty) {
+      _showSnackBar('Please set your Groq API key in the code');
       return;
     }
     if (_studentsController.text.isEmpty && _submissionFile == null) {
@@ -157,7 +160,7 @@ class _ScoringPageState extends State<ScoringPage> {
     setState(() => _isLoading = true);
 
     try {
-      final aiService = AIService(apiKey: _apiKeyController.text.trim());
+      final aiService = AIService(apiKey: _groqApiKey.trim());
       final criteria = _criteriaController.text;
 
       // PATH 1: Folder was selected — use BatchService (sequential, safe)
@@ -418,7 +421,6 @@ class _ScoringPageState extends State<ScoringPage> {
 
   @override
   void dispose() {
-    _apiKeyController.dispose();
     _studentsController.dispose();
     _criteriaController.dispose();
     _exportPathController.dispose();
@@ -438,39 +440,8 @@ class _ScoringPageState extends State<ScoringPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // API Key Input
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Groq API Key (Llama 4)',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _apiKeyController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: 'Enter your Groq API key',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        suffixIcon: const Icon(Icons.vpn_key),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
 
-            // Template Excel and Marker
+            // Template Excel
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(12.0),
@@ -513,16 +484,6 @@ class _ScoringPageState extends State<ScoringPage> {
                           onPressed: _pickTemplateFile,
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Marker name (required when using template)',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        prefixIcon: const Icon(Icons.person),
-                      ),
                     ),
                   ],
                 ),
@@ -602,18 +563,6 @@ class _ScoringPageState extends State<ScoringPage> {
                           ),
                         ),
                       ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _studentsController,
-                      maxLines: 8,
-                      decoration: InputDecoration(
-                        hintText:
-                            'Paste multiple student submissions here...\n\nExample:\n--- Student Name: John Doe ---\nContent: [submission]\n\n--- Student Name: Jane Smith ---\nContent: [submission]',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),
@@ -679,18 +628,6 @@ class _ScoringPageState extends State<ScoringPage> {
                           ),
                         ),
                       ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: _criteriaController,
-                      maxLines: 8,
-                      decoration: InputDecoration(
-                        hintText:
-                            'Paste or load your grading criteria...\n\nExample:\n- Completeness: 30 points\n- Accuracy: 40 points\n- Presentation: 30 points',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
                   ],
                 ),
               ),

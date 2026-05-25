@@ -50,6 +50,9 @@ app.*.map.json
 # VS Code
 .vscode/
 
+# Local environment files
+.env
+
 # Firebase
 firebase-debug.log
 
