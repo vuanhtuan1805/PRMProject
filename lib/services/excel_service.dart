@@ -31,9 +31,9 @@ class ExcelService {
 
       // Get the documents directory
       final dir = await getApplicationDocumentsDirectory();
-        final fileName =
+      final fileName =
           'PMG_Scores_${DateTime.now().millisecondsSinceEpoch}.xlsx';
-        final resolvedPath = filePath ?? '${dir.path}/$fileName';
+      final resolvedPath = filePath ?? '${dir.path}/$fileName';
 
       // Save the file
       final file = File(resolvedPath);
@@ -46,7 +46,9 @@ class ExcelService {
   }
 
   /// Export with detailed feedback
-  Future<String> exportDetailedResults(List<Map<String, dynamic>> results) async {
+  Future<String> exportDetailedResults(
+    List<Map<String, dynamic>> results,
+  ) async {
     try {
       final excel = Excel.createExcel();
       final sheet = excel['Sheet1'];
@@ -80,7 +82,8 @@ class ExcelService {
 
       // Get the documents directory
       final dir = await getApplicationDocumentsDirectory();
-      final fileName = 'PMG_Scores_Detailed_${DateTime.now().millisecondsSinceEpoch}.xlsx';
+      final fileName =
+          'PMG_Scores_Detailed_${DateTime.now().millisecondsSinceEpoch}.xlsx';
       final filePath = '${dir.path}/$fileName';
 
       // Save the file
@@ -96,7 +99,6 @@ class ExcelService {
   Future<String> fillTemplate({
     required String templatePath,
     required List<Map<String, dynamic>> results,
-    required String marker,
   }) async {
     try {
       final file = File(templatePath);
@@ -127,10 +129,12 @@ class ExcelService {
       var lastRow = table.maxRows;
 
       for (var row = headerRowIndex + 1; row < table.maxRows; row++) {
-        final aliasCell = table.cell(CellIndex.indexByColumnRow(
-          columnIndex: colIndex.alias,
-          rowIndex: row,
-        ));
+        final aliasCell = table.cell(
+          CellIndex.indexByColumnRow(
+            columnIndex: colIndex.alias,
+            rowIndex: row,
+          ),
+        );
         final aliasText = aliasCell.value?.toString().trim() ?? '';
         if (aliasText.isEmpty) {
           continue;
@@ -138,23 +142,29 @@ class ExcelService {
 
         final result = byAlias.remove(aliasText);
         if (result == null) continue;
-        _writeRow(table, row, colIndex, result, marker);
+        _writeRow(table, row, colIndex, result);
       }
 
       // Append any results not found in the template
       for (final entry in byAlias.entries) {
         final row = lastRow;
         lastRow++;
-        _writeRow(table, row, colIndex, entry.value, marker);
+        _writeRow(table, row, colIndex, entry.value);
       }
 
       final outBytes = excel.encode();
       if (outBytes == null) {
         throw Exception('Failed to encode updated Excel file');
       }
-      await file.writeAsBytes(outBytes, flush: true);
+      final outputPath = templatePath.replaceFirst(
+        RegExp(r'\.xlsx$', caseSensitive: false),
+        '_filled.xlsx',
+      );
 
-      return templatePath;
+      final outputFile = File(outputPath);
+      await outputFile.writeAsBytes(outBytes, flush: true);
+
+      return outputPath;
     } catch (e) {
       throw Exception('Error writing template Excel: ${e.toString()}');
     }
@@ -166,14 +176,108 @@ class ExcelService {
       if (table == null) continue;
 
       for (var row = 0; row < table.maxRows && row < 10; row++) {
-        final columns = _mapHeaderRow(table, row);
-        if (columns != null) {
-          return _SheetWithHeaders(table, row, columns);
+        // Try normal single-row header first
+        final singleRowColumns = _mapHeaderRow(table, row);
+        if (singleRowColumns != null) {
+          return _SheetWithHeaders(table, row, singleRowColumns);
+        }
+
+        // Try two-row header: current row + next row
+        if (row + 1 < table.maxRows) {
+          final twoRowColumns = _mapTwoHeaderRows(table, row, row + 1);
+          if (twoRowColumns != null) {
+            return _SheetWithHeaders(table, row + 1, twoRowColumns);
+          }
         }
       }
     }
 
     return null;
+  }
+
+  _ColumnIndex? _mapTwoHeaderRows(
+    Sheet table,
+    int topRowIndex,
+    int bottomRowIndex,
+  ) {
+    int? alias;
+    int? marker;
+    int? q1;
+    int? q2;
+    int? q3;
+    int? q4;
+    int? total;
+    int? comment;
+
+    final maxCols = table.maxColumns;
+
+    for (var col = 0; col < maxCols; col++) {
+      final topValue =
+          table
+              .cell(
+                CellIndex.indexByColumnRow(
+                  columnIndex: col,
+                  rowIndex: topRowIndex,
+                ),
+              )
+              .value
+              ?.toString()
+              .trim()
+              .toLowerCase() ??
+          '';
+
+      final bottomValue =
+          table
+              .cell(
+                CellIndex.indexByColumnRow(
+                  columnIndex: col,
+                  rowIndex: bottomRowIndex,
+                ),
+              )
+              .value
+              ?.toString()
+              .trim()
+              .toLowerCase() ??
+          '';
+
+      final value = '$topValue $bottomValue'.trim();
+
+      if (topValue == 'alias' || bottomValue == 'alias') alias = col;
+      if (topValue == 'marker' || bottomValue == 'marker') marker = col;
+
+      if (value.contains('question 1') || value == 'q1') q1 = col;
+      if (value.contains('question 2') || value == 'q2') q2 = col;
+      if (value.contains('question 3') || value == 'q3') q3 = col;
+      if (value.contains('question 4') || value == 'q4') q4 = col;
+
+      if (topValue == 'total' || bottomValue == 'total') total = col;
+      if (topValue == 'comment' ||
+          bottomValue == 'comment' ||
+          topValue == 'comments' ||
+          bottomValue == 'comments') {
+        comment = col;
+      }
+    }
+
+    if (alias == null ||
+        q1 == null ||
+        q2 == null ||
+        q3 == null ||
+        q4 == null ||
+        total == null) {
+      return null;
+    }
+
+    return _ColumnIndex(
+      alias: alias,
+      marker: marker,
+      q1: q1,
+      q2: q2,
+      q3: q3,
+      q4: q4,
+      total: total,
+      comment: comment,
+    );
   }
 
   _ColumnIndex? _mapHeaderRow(Sheet table, int rowIndex) {
@@ -186,10 +290,18 @@ class ExcelService {
     int? total;
     int? comment;
 
-    final rowCells = rowIndex < table.rows.length ? table.rows[rowIndex] : const [];
+    final rowCells = rowIndex < table.rows.length
+        ? table.rows[rowIndex]
+        : const [];
     for (var col = 0; col < rowCells.length; col++) {
-      final value = table
-              .cell(CellIndex.indexByColumnRow(columnIndex: col, rowIndex: rowIndex))
+      final value =
+          table
+              .cell(
+                CellIndex.indexByColumnRow(
+                  columnIndex: col,
+                  rowIndex: rowIndex,
+                ),
+              )
               .value
               ?.toString()
               .trim()
@@ -207,7 +319,12 @@ class ExcelService {
       if (value == 'comment' || value == 'comments') comment = col;
     }
 
-    if (alias == null || q1 == null || q2 == null || q3 == null || q4 == null || total == null) {
+    if (alias == null ||
+        q1 == null ||
+        q2 == null ||
+        q3 == null ||
+        q4 == null ||
+        total == null) {
       return null;
     }
 
@@ -228,7 +345,6 @@ class ExcelService {
     int row,
     _ColumnIndex columns,
     Map<String, dynamic> result,
-    String marker,
   ) {
     final alias = result['alias']?.toString().trim() ?? '';
     final q1 = _scaledScore(result['q1']);
@@ -236,35 +352,62 @@ class ExcelService {
     final q3 = _scaledScore(result['q3']);
     final q4 = _scaledScore(result['q4']);
     final total = _scaledScore(result['total']);
-    final comment = result['comment']?.toString() ?? result['feedback']?.toString() ?? '';
+    final comment =
+        result['comment']?.toString() ?? result['feedback']?.toString() ?? '';
 
     table
-        .cell(CellIndex.indexByColumnRow(columnIndex: columns.alias, rowIndex: row))
-        .value = TextCellValue(alias);
-    if (columns.marker != null && marker.isNotEmpty) {
-      table
-          .cell(CellIndex.indexByColumnRow(columnIndex: columns.marker!, rowIndex: row))
-          .value = TextCellValue(marker);
-    }
+        .cell(
+          CellIndex.indexByColumnRow(columnIndex: columns.alias, rowIndex: row),
+        )
+        .value = TextCellValue(
+      alias,
+    );
     table
-        .cell(CellIndex.indexByColumnRow(columnIndex: columns.q1, rowIndex: row))
-        .value = DoubleCellValue(q1);
+        .cell(
+          CellIndex.indexByColumnRow(columnIndex: columns.q1, rowIndex: row),
+        )
+        .value = DoubleCellValue(
+      q1,
+    );
     table
-        .cell(CellIndex.indexByColumnRow(columnIndex: columns.q2, rowIndex: row))
-        .value = DoubleCellValue(q2);
+        .cell(
+          CellIndex.indexByColumnRow(columnIndex: columns.q2, rowIndex: row),
+        )
+        .value = DoubleCellValue(
+      q2,
+    );
     table
-        .cell(CellIndex.indexByColumnRow(columnIndex: columns.q3, rowIndex: row))
-        .value = DoubleCellValue(q3);
+        .cell(
+          CellIndex.indexByColumnRow(columnIndex: columns.q3, rowIndex: row),
+        )
+        .value = DoubleCellValue(
+      q3,
+    );
     table
-        .cell(CellIndex.indexByColumnRow(columnIndex: columns.q4, rowIndex: row))
-        .value = DoubleCellValue(q4);
+        .cell(
+          CellIndex.indexByColumnRow(columnIndex: columns.q4, rowIndex: row),
+        )
+        .value = DoubleCellValue(
+      q4,
+    );
     table
-        .cell(CellIndex.indexByColumnRow(columnIndex: columns.total, rowIndex: row))
-        .value = DoubleCellValue(total);
+        .cell(
+          CellIndex.indexByColumnRow(columnIndex: columns.total, rowIndex: row),
+        )
+        .value = DoubleCellValue(
+      total,
+    );
     if (columns.comment != null) {
       table
-          .cell(CellIndex.indexByColumnRow(columnIndex: columns.comment!, rowIndex: row))
-          .value = TextCellValue(comment);
+          .cell(
+            CellIndex.indexByColumnRow(
+              columnIndex: columns.comment!,
+              rowIndex: row,
+            ),
+          )
+          .value = TextCellValue(
+        comment,
+      );
     }
   }
 

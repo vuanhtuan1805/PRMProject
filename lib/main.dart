@@ -39,14 +39,12 @@ class _ScoringPageState extends State<ScoringPage> {
   final TextEditingController _criteriaController = TextEditingController();
   final TextEditingController _exportPathController = TextEditingController();
   final TextEditingController _templatePathController = TextEditingController();
-  final TextEditingController _markerController = TextEditingController();
 
   String? _submissionFile;
   String? _criteriaFile;
   String? _questionImagePath;
   List<Map<String, dynamic>> _evaluationResults = [];
   bool _isLoading = false;
-  bool _showFormatGuide = false;
   int _progressRead = 0;
   int _progressTotal = 0;
   int _batchesProcessed = 0;
@@ -293,15 +291,9 @@ class _ScoringPageState extends State<ScoringPage> {
       final templatePath = _templatePathController.text.trim();
 
       if (templatePath.isNotEmpty) {
-        final marker = _markerController.text.trim();
-        if (marker.isEmpty) {
-          _showSnackBar('Please enter the marker name');
-          return;
-        }
         final fileName = await excelService.fillTemplate(
           templatePath: templatePath,
           results: _evaluationResults,
-          marker: marker,
         );
         _showSnackBar('Updated template: $fileName');
         return;
@@ -431,7 +423,6 @@ class _ScoringPageState extends State<ScoringPage> {
     _criteriaController.dispose();
     _exportPathController.dispose();
     _templatePathController.dispose();
-    _markerController.dispose();
     super.dispose();
   }
 
@@ -525,7 +516,6 @@ class _ScoringPageState extends State<ScoringPage> {
                     ),
                     const SizedBox(height: 12),
                     TextField(
-                      controller: _markerController,
                       decoration: InputDecoration(
                         hintText: 'Marker name (required when using template)',
                         border: OutlineInputBorder(
