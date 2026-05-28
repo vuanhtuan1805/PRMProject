@@ -6,6 +6,7 @@ import 'services/file_service.dart';
 import 'services/ai_service.dart';
 import 'services/excel_service.dart';
 import 'services/batch_service.dart';
+import 'widgets/scoring_sections.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -379,210 +380,20 @@ class _ScoringPageState extends State<ScoringPage> {
           final leftColumn = Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Template Excel
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Template Excel (Optional)',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Select an existing XLSX to fill Alias, Q1-Q4, Total, Comment',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _templatePathController,
-                              decoration: InputDecoration(
-                                hintText: 'Select template .xlsx...',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                isDense: true,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.upload_file, size: 14),
-                            label: const Text('Load'),
-                            onPressed: _pickTemplateFile,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              minimumSize: const Size(0, 36),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+              TemplateExcelCard(
+                onPickTemplateFile: _pickTemplateFile,
               ),
               const SizedBox(height: 10),
 
-              // Student Submissions
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Student Submissions (Multiple)',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Load or paste submissions for multiple students',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Column(
-                            children: [
-                              ElevatedButton.icon(
-                                icon: const Icon(Icons.folder_open, size: 14),
-                                label: const Text('Load Folder'),
-                                onPressed: _pickSubmissionFile,
-                                style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 8,
-                                  ),
-                                  minimumSize: const Size(0, 36),
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                            ],
-                          ),
-                        ],
-                      ),
-                      if (_submissionFile != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.green[50],
-                              border: Border.all(color: Colors.green),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '✓ Loaded: $_submissionFile',
-                              style: const TextStyle(
-                                color: Colors.green,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+              SubmissionsCard(
+                onPickSubmissionFile: _pickSubmissionFile,
+                submissionFile: _submissionFile,
               ),
               const SizedBox(height: 10),
 
-              // Scoring Criteria
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Grading Criteria Document',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  'Define your grading standards and rubric',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.upload_file, size: 14),
-                            label: const Text('Load DOCX/TXT'),
-                            onPressed: _pickCriteriaFile,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              minimumSize: const Size(0, 36),
-                            ),
-                          ),
-                        ],
-                      ),
-                      if (_criteriaFile != null)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.green[50],
-                              border: Border.all(color: Colors.green),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Text(
-                              '✓ Loaded: $_criteriaFile',
-                              style: const TextStyle(
-                                color: Colors.green,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
+              CriteriaCard(
+                onPickCriteriaFile: _pickCriteriaFile,
+                criteriaFile: _criteriaFile,
               ),
             ],
           );
@@ -590,235 +401,32 @@ class _ScoringPageState extends State<ScoringPage> {
           final rightColumn = Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Output Excel File
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Excel Output File',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Choose where to save the exported .xlsx file',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _exportPathController,
-                              decoration: InputDecoration(
-                                hintText: 'Select a save location...',
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                isDense: true,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.save_alt, size: 14),
-                            label: const Text('Browse'),
-                            onPressed: _pickExportPath,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              minimumSize: const Size(0, 36),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+              OutputExcelCard(
+                onPickExportPath: _pickExportPath,
               ),
               const SizedBox(height: 10),
 
-              // Question Image (PNG)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Question Image (PNG)',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Optional: attach the question image for reference',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _questionImagePath ?? 'No image selected',
-                              style: TextStyle(
-                                fontSize: 11,
-                                color: _questionImagePath == null
-                                    ? Colors.grey[600]
-                                    : Colors.black,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.image, size: 14),
-                            label: const Text('Choose PNG'),
-                            onPressed: _pickQuestionImage,
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                                vertical: 8,
-                              ),
-                              minimumSize: const Size(0, 36),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+              QuestionImageCard(
+                questionImagePath: _questionImagePath,
+                onPickQuestionImage: _pickQuestionImage,
               ),
               const SizedBox(height: 10),
 
-              // Progress (folder mode)
-              if (_submissionFile != null && _progressTotal > 0) ...[
-                Text('Reading files: $_progressRead / $_progressTotal'),
-                const SizedBox(height: 4),
-                LinearProgressIndicator(
-                  value: _progressTotal > 0
-                      ? _progressRead / _progressTotal
-                      : null,
-                  minHeight: 8,
+              if (_submissionFile != null)
+                ProgressSection(
+                  progressRead: _progressRead,
+                  progressTotal: _progressTotal,
                 ),
-                const SizedBox(height: 8),
-              ],
-
-              // Evaluate Button
-              ElevatedButton.icon(
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.psychology),
-                label: Text(_isLoading ? 'Grading...' : 'Grade All Students'),
-                onPressed: _isLoading ? null : _evaluateWithAI,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  backgroundColor: Colors.blue,
-                  disabledBackgroundColor: Colors.grey,
-                ),
+              EvaluateButton(
+                isLoading: _isLoading,
+                onEvaluate: _evaluateWithAI,
               ),
               const SizedBox(height: 10),
 
-              // Results Display
-              if (_evaluationResults.isNotEmpty) ...[
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              'Results (${_evaluationResults.length} items)',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
-                            ),
-                            ElevatedButton.icon(
-                              icon: const Icon(Icons.download, size: 14),
-                              label: const Text('Export'),
-                              onPressed: _exportToExcel,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: Colors.green,
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 8,
-                                ),
-                                minimumSize: const Size(0, 36),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: _evaluationResults.length,
-                          separatorBuilder: (_, _) => const Divider(),
-                          itemBuilder: (context, index) {
-                            final result = _evaluationResults[index];
-                            final total = result['total'] ?? result['score'];
-                            final comment = result['comment'] ?? result['feedback'];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Student ${index + 1}: ${result['studentName'] ?? 'N/A'}',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Score: ${total ?? 'N/A'}/100',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.blue,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Feedback: ${comment ?? 'N/A'}',
-                                    style: const TextStyle(fontSize: 11),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+              ResultsCard(
+                results: _evaluationResults,
+                onExportToExcel: _exportToExcel,
+              ),
             ],
           );
 

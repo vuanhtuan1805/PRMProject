@@ -33,8 +33,7 @@ class BatchService {
 
         var normalized = content.trim();
         if (normalized.length > _maxStudentChars) {
-          normalized = normalized.substring(0, _maxStudentChars) +
-              '\n\n[TRUNCATED: original ${content.length} chars]';
+          normalized = '${normalized.substring(0, _maxStudentChars)}\n\n[TRUNCATED: original ${content.length} chars]';
         }
 
         studentBlocks.add(

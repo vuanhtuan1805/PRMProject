@@ -101,8 +101,9 @@ class FileService {
   static Future<String> readStudentFolder(String folderPath) async {
     try {
       final dir = Directory(folderPath);
-      if (!await dir.exists())
+      if (!await dir.exists()) {
         throw Exception('Directory not found: $folderPath');
+      }
 
       final files = await dir
           .list()
@@ -155,8 +156,9 @@ class FileService {
   static Future<List<String>> listStudentFiles(String folderPath) async {
     try {
       final dir = Directory(folderPath);
-      if (!await dir.exists())
+      if (!await dir.exists()) {
         throw Exception('Directory not found: $folderPath');
+      }
 
       final files = await dir
           .list()
