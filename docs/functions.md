@@ -19,7 +19,7 @@ This list maps user-visible app actions to the main functions that implement the
 - Start grading workflow: _ScoringPageState._evaluateWithAI()
 - Batch grade a folder: BatchService.gradeFolder()
 - Retry AI calls on failure: BatchService._callWithRetry()
-- Send grading request to Groq: AIService.evaluateSubmissions() -> AIService._callGroqChatCompletions()
+- Build prompt and send grading request: AIService.buildPrompt() -> AIService.evaluateSubmissions() -> AIService._callGroqChatCompletions()
 - Parse model JSON: AIService._parseJsonArray() / AIService._stripCodeFence()
 - Normalize results for export: _ScoringPageState._normalizeResults()
 

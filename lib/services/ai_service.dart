@@ -1,6 +1,21 @@
 import 'dart:convert';
 
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
+
+class PromptTemplateStats {
+  final int baseLength;
+  final int countOccurrences;
+  final int criteriaOccurrences;
+  final int submissionsOccurrences;
+
+  const PromptTemplateStats({
+    required this.baseLength,
+    required this.countOccurrences,
+    required this.criteriaOccurrences,
+    required this.submissionsOccurrences,
+  });
+}
 
 class AIService {
   final String apiKey;
@@ -10,7 +25,85 @@ class AIService {
   static const String _groqChatCompletionsUrl =
       'https://api.groq.com/openai/v1/chat/completions';
 
-  /// Try Meta Llama 4 models on Groq until one succeeds.
+  static const String _countPlaceholder = '{{COUNT}}';
+  static const String _criteriaPlaceholder = '{{CRITERIA}}';
+  static const String _submissionsPlaceholder = '{{SUBMISSIONS}}';
+
+  static const String _promptAssetPath = 'assets/prompts/ai_prompt.txt';
+
+  static String? _cachedPromptTemplate;
+  static PromptTemplateStats? _cachedPromptStats;
+
+  static Future<String> _loadPromptTemplate() async {
+    if (_cachedPromptTemplate != null) {
+      return _cachedPromptTemplate!;
+    }
+
+    final template = await rootBundle.loadString(_promptAssetPath);
+    _cachedPromptTemplate = template;
+    _cachedPromptStats = _calculatePromptStats(template);
+    return template;
+  }
+
+  static int _countOccurrences(String text, String needle) {
+    if (needle.isEmpty) return 0;
+    return RegExp(RegExp.escape(needle)).allMatches(text).length;
+  }
+
+  static PromptTemplateStats _calculatePromptStats(String template) {
+    final countOccurrences = _countOccurrences(template, _countPlaceholder);
+    final criteriaOccurrences = _countOccurrences(template, _criteriaPlaceholder);
+    final submissionsOccurrences =
+        _countOccurrences(template, _submissionsPlaceholder);
+
+    final baseLength = template.length -
+        (countOccurrences * _countPlaceholder.length) -
+        (criteriaOccurrences * _criteriaPlaceholder.length) -
+        (submissionsOccurrences * _submissionsPlaceholder.length);
+
+    return PromptTemplateStats(
+      baseLength: baseLength,
+      countOccurrences: countOccurrences,
+      criteriaOccurrences: criteriaOccurrences,
+      submissionsOccurrences: submissionsOccurrences,
+    );
+  }
+
+  static Future<PromptTemplateStats> getPromptTemplateStats() async {
+    if (_cachedPromptStats != null) {
+      return _cachedPromptStats!;
+    }
+
+    await _loadPromptTemplate();
+    return _cachedPromptStats!;
+  }
+
+  static Future<String> buildPrompt({
+    required String criteria,
+    required String submissions,
+    required int expectedSubmissionCount,
+  }) async {
+    final template = await _loadPromptTemplate();
+    return template
+        .replaceAll(_countPlaceholder, expectedSubmissionCount.toString())
+        .replaceAll(_criteriaPlaceholder, criteria)
+        .replaceAll(_submissionsPlaceholder, submissions);
+  }
+
+  static Future<int> estimatePromptChars({
+    required int expectedSubmissionCount,
+    required int criteriaLength,
+    required int submissionsLength,
+  }) async {
+    final stats = await getPromptTemplateStats();
+    final countLength = expectedSubmissionCount.toString().length;
+
+    return stats.baseLength +
+        (countLength * stats.countOccurrences) +
+        (criteriaLength * stats.criteriaOccurrences) +
+        (submissionsLength * stats.submissionsOccurrences);
+  }
+
   final List<String> _modelCandidates = [
     // 'llama-3.1-8b-instant',
     // 'llama-3.3-70b-versatile',
@@ -22,48 +115,11 @@ class AIService {
     required String criteria,
     required int expectedSubmissionCount,
   }) async {
-    final prompt = '''
-You are an expert academic evaluator for the PMG (Project Management Group) subject.
-Your task is to evaluate student submissions and provide individual scores for each.
-
-There may be ONE or MULTIPLE student submissions.
-
-Expected number of submissions: $expectedSubmissionCount
-
-Rules:
-- Return exactly $expectedSubmissionCount result item(s).
-- Do not split one file into multiple students unless the text clearly contains separate student submissions.
-- If expectedSubmissionCount is 1, return exactly one student result.
-- If multiple, return one result per submission.
-
-GRADING CRITERIA:
-$criteria
-
-STUDENT SUBMISSIONS (Multiple Students):
-$submissions
-
-Use the rubric strictly.
-
-For each question:
-1. Score each sub-criterion separately.
-2. Sum the sub-criteria to get q1, q2, q3, q4.
-3. Do not assign a holistic score.
-4. Do not give credit unless there is clear evidence in the submission.
-5. Total must equal q1 + q2 + q3 + q4.
-
-IMPORTANT:
-- Process ALL students in the submission
-- Each student should have their own score entry
-- Ensure consistent scoring
-
-Format your response as a JSON array. Example:
-[
-  {"alias": "1", "studentName": "John Doe", "q1": 18, "q2": 16, "q3": 25, "q4": 26, "total": 85, "comment": "Good understanding..."},
-  {"alias": "2", "studentName": "Jane Smith", "q1": 20, "q2": 18, "q3": 27, "q4": 27, "total": 92, "comment": "Excellent work..."}
-]
-
-Provide ONLY the valid JSON array, no additional text or markdown.
-''';
+    final prompt = await buildPrompt(
+      criteria: criteria,
+      submissions: submissions,
+      expectedSubmissionCount: expectedSubmissionCount,
+    );
 
     try {
       print('AIService: sending prompt to Groq (length=${prompt.length})');
@@ -82,7 +138,6 @@ Provide ONLY the valid JSON array, no additional text or markdown.
           lastEx = Exception('model=$m error: $e');
           print('AIService: model=$m error: $e');
           print(st.toString());
-          // continue to next model
         }
       }
 

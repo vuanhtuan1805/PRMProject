@@ -6,7 +6,7 @@ This document explains how the app works, how data moves through the system, and
 1. App starts and loads .env to read GROQ_API_KEY.
 2. UI presents a two-column layout with import actions on the left and output/actions on the right.
 3. User imports submission files (folder or multi-select) and a criteria file (TXT or DOCX).
-4. App sends submissions + criteria to Groq through AIService.
+4. App builds the prompt and sends submissions + criteria to Groq through AIService.
 5. Results are normalized and displayed in the results list.
 6. Results can be exported to a new Excel file or applied to an existing template.
 
@@ -53,7 +53,7 @@ This document explains how the app works, how data moves through the system, and
 - If a folder path is selected, the app uses BatchService.gradeFolder().
 - BatchService:
   - Reads files and builds student blocks.
-  - Splits blocks into batches by count and size limits.
+  - Splits blocks into batches based on estimated prompt token size.
   - Sends batches sequentially with delays to respect rate limits.
   - Retries on transient failures and handles 413/rate limit cases.
   - Reports progress via a callback.
@@ -64,7 +64,7 @@ This document explains how the app works, how data moves through the system, and
 - Results are accumulated and progress updates are shown.
 
 ## AIService request/response
-- AIService builds a prompt with:
+- AIService builds a prompt via buildPrompt() with:
   - Grading rules
   - Criteria text
   - Submission blocks
