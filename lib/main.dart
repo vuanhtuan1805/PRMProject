@@ -182,7 +182,6 @@ class _ScoringPageState extends State<ScoringPage> {
               _batchesProcessed = batches;
             });
           },
-          batchSize: 3,
         );
 
         setState(() => _evaluationResults = _normalizeResults(results));
